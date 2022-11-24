@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@chakra-ui/react": "^1.6.7",
+    "@emotion/react": "^11.4.1",
+    "@emotion/styled": "^11.3.0",
+    "@fontsource/raleway": "^4.5.0",
     "@ckeditor/ckeditor5-build-classic": "^23.0.0",
     "@ckeditor/ckeditor5-react": "^2.1.0",
     "@stripe/react-stripe-js": "^1.4.0",
@@ -10,11 +14,15 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",
     "@testing-library/user-event": "^7.1.2",
+    "algorand-session-wallet": "^1.7.0",
+    "algosdk": "^1.23.2",
     "axios": "^0.20.0",
     "bootstrap": "^4.5.2",
     "gapi-script": "^1.2.0",
     "google-map-react": "^2.2.0",
     "html-react-parser": "^0.14.0",
+    "framer-motion": "^4.1.17",
+    "react-hook-form": "^7.39.5",
     "jquery": "^3.5.1",
     "leaflet": "^1.6.0",
     "popper.js": "^1.16.1",
@@ -57,5 +65,13 @@
   },
   "devDependencies": {
     "babel-plugin-react-html-attrs": "^3.0.5"
+  },
+  "resolutions": {
+    "@babel/core": "7.19.6",
+    "@babel/generator": "7.19.6",
+    "@babel/compat-data": "7.19.4",
+    "@babel/helper-compilation-targets": "7.19.3",
+    "@babel/helper-create-class-features-plugin": "7.19.0",
+    "@babel/helper-module-transforms": "7.19.6"
   }
 }

@@ -18,68 +18,71 @@ import Preference from "./Pages/HomePage/Preference";
 import Stripe from "./Pages/payment/StripeContainer";
 import Chat from "./Pages/Chat/Chat";
 import Maps from "./components/UI/Map/Map";
+import Wallet from "./Wallet";
 
 class App extends Component {
   render() {
     return (
-      <BrowserRouter>
-        <Switch>
-          <Route path="/signup" exact component={Signup} />
-          <Route path="/login" component={Login} />
-          <Route path="/signup/otp" component={Otp} />
-          <Route path="/forgotpasswordemail" component={EmailVerify} />
-          <Route path="/ForgotPasswordotp" component={ForgotPasswordotp} />
-          <Route path="/ResetPassword" component={ResetPassword} />
+      <>
+        <BrowserRouter>
+          <Switch>
+            <Route path="/signup" exact component={Signup} />
+            <Route path="/login" component={Login} />
+            <Route path="/signup/otp" component={Otp} />
+            <Route path="/forgotpasswordemail" component={EmailVerify} />
+            <Route path="/ForgotPasswordotp" component={ForgotPasswordotp} />
+            <Route path="/ResetPassword" component={ResetPassword} />
+            <Route path="/wallet" exact component={Wallet} />
+            <Route
+              path="/home/:CourseName"
+              exact
+              render={(props) => (
+                <Homepage key={props.location.pathname} {...props} />
+              )}
+            />
+            <Route
+              path="/home/Interest/Preference"
+              exact
+              component={Preference}
+            />
 
-          <Route
-            path="/home/:CourseName"
-            exact
-            render={(props) => (
-              <Homepage key={props.location.pathname} {...props} />
-            )}
-          />
-          <Route
-            path="/home/Interest/Preference"
-            exact
-            component={Preference}
-          />
+            <Route
+              path="/course/:Course/:Courseid"
+              exact
+              render={(props) => (
+                <CoursePage key={props.location.pathname} {...props} />
+              )}
+            />
 
-          <Route
-            path="/course/:Course/:Courseid"
-            exact
-            render={(props) => (
-              <CoursePage key={props.location.pathname} {...props} />
-            )}
-          />
+            <Route path="/map" component={Maps} />
 
-          <Route path="/map" component={Maps} />
+            <Route path="/Cart" component={Cart} />
 
-          <Route path="/Cart" component={Cart} />
+            <Route
+              path="/stripe/:CourseLink"
+              exact
+              render={(props) => (
+                <Stripe key={props.location.pathname} {...props} />
+              )}
+            />
 
-          <Route
-            path="/stripe/:CourseLink"
-            exact
-            render={(props) => (
-              <Stripe key={props.location.pathname} {...props} />
-            )}
-          />
+            <Route path="/Teacher" component={TeacherPage} />
+            <Route
+              path="/TeacherVideos"
+              render={(props) => <TeacherVideos {...props} />}
+            />
 
-          <Route path="/Teacher" component={TeacherPage} />
-          <Route
-            path="/TeacherVideos"
-            render={(props) => <TeacherVideos {...props} />}
-          />
+            <Route path="/TeacherHome" component={TeacherHomePage} />
+            <Route path="/TeacherEdit" component={TeacherEdit} />
 
-          <Route path="/TeacherHome" component={TeacherHomePage} />
-          <Route path="/TeacherEdit" component={TeacherEdit} />
+            {/* chat room for teacher and student */}
 
-          {/* chat room for teacher and student */}
+            <Route path="/chat" component={Chat} />
 
-          <Route path="/chat" component={Chat} />
-
-          <Redirect to="/home/all" />
-        </Switch>
-      </BrowserRouter>
+            <Redirect to="/home/all" />
+          </Switch>
+        </BrowserRouter>
+      </>
     );
   }
 }

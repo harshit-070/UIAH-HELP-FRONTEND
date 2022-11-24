@@ -1,51 +1,37 @@
-import React, {Component} from 'react';
-import './CSS/VideoList.css';
+import React, { Component } from "react";
+import "./CSS/VideoList.css";
 
-class VideoList extends Component{
+class VideoList extends Component {
+  render() {
+    let className = [];
 
- 
-    
-    render(){
-        let className=[];
-        
-        let PlayIcon=[];
+    let PlayIcon = [];
 
-        if(this.props.playButton){
-            className=['video-list',this.props.playButton];
-        }
-        
-        if(this.props.completed){
-            PlayIcon=['fa fa-check-circle',this.props.completed]
-        }
-        else if(!this.props.completed){
-            PlayIcon=['fa fa-pause-circle'];
-        }
-      
+    if (this.props.playButton) {
+      className = ["video-list", this.props.playButton];
+    }
 
-            return(
-            <div onClick={this.props.changed}  className={className.join(' ')}>
-                
-                <div className="play-title">
-                
-                    <i className={PlayIcon.join(' ')}
-                    aria-hidden="true"></i>
+    if (this.props.completed) {
+      PlayIcon = ["fa fa-check-circle", this.props.completed];
+    } else if (!this.props.completed) {
+      PlayIcon = ["fa fa-pause-circle"];
+    }
 
+    return (
+      <div onClick={this.props.changed} className={className.join(" ")}>
+        <div className="play-title">
+          <i className={PlayIcon.join(" ")} aria-hidden="true"></i>
 
-                    <span> {this.props.title}</span>   
-                
-                </div>     
+          <span> {this.props.title}</span>
+        </div>
 
-                <div className="video-duration">
+        {/* <div className="video-duration">
                     <span>4.22</span>  
           
-                </div> 
-
-            </div> 
-            );
-        }
-
-
+                </div>  */}
+      </div>
+    );
+  }
 }
 
 export default VideoList;
-
