@@ -38,6 +38,7 @@ const Create = (props) => {
 
   async function createNft(studentname, student_id) {
     const META_URL = process.env.META_URL;
+
     const cid = META_URL + student_id;
     toast({
       title: "Comfirm",
