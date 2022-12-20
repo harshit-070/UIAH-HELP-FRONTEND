@@ -1,386 +1,540 @@
-import React, {Component} from 'react';
-import './CSS/CoursePage.css'
-import {NavLink,Redirect} from 'react-router-dom';
-import CourseDesc from './CourseDesc';
-import CourseVideo from './CourseVideo';
-import axios from '../../ApiServices/axiosUrl';
-import VideoList from './VideoList';
-import Layout from '../../components/Layout/Layout';
-import parse from 'html-react-parser';
-import ProgressBar from 'react-bootstrap/ProgressBar';
-import AuthServices from '../../ApiServices/auth.service';
-import Rating from './Rating';
+import React, { Component } from "react";
+import "./CSS/CoursePage.css";
+import { NavLink, Redirect } from "react-router-dom";
+import CourseDesc from "./CourseDesc";
+import CourseVideo from "./CourseVideo";
+import axios from "../../ApiServices/axiosUrl";
+import VideoList from "./VideoList";
+import Layout from "../../components/Layout/Layout";
+import parse from "html-react-parser";
+import ProgressBar from "react-bootstrap/ProgressBar";
+import AuthServices from "../../ApiServices/auth.service";
+import Rating from "./Rating";
+import { NFT } from "../../algorand/nft";
+import { useToast } from "@chakra-ui/react";
+import { conf, sessionGetActiveConf } from "../../algorand/config";
+import { SessionWallet } from "algorand-session-wallet";
+import Signin from "../Auth/Signin";
+import instance from "../../ApiServices/instance";
+import algosdk from "algosdk";
+import { fundAccount } from "../../algorand/algorand";
 
+const withUseToast = (Component) => (props) => {
+  const toast = useToast();
+  return <Component {...props} toast={toast} />;
+};
 class CoursePage extends Component {
+  state = {
+    CourseId: this.props.match.params.Courseid,
+    CourseType: this.props.match.params.Course,
+    CoursesInfo: null,
+    loading: true,
+    token: localStorage.getItem("user"),
+    redirect: null,
+    CurrentVideo: "",
+    playing: false,
+    PlayButton: "fa fa-play-circle",
+    progress: 0,
+    index: 0,
+    WatchedVideoCount: 0,
+    bookmark: false,
+    video0: true,
+    video1: false,
+    video2: false,
+    video3: false,
+    video4: false,
 
-    state = {
-        CourseId: this.props.match.params.Courseid,
-        CourseType:this.props.match.params.Course,
-        CoursesInfo: null,
-        loading: true,
-        token:localStorage.getItem('user'),
-        redirect:null,
-        CurrentVideo:'',
-        playing:false,
-        PlayButton:'fa fa-play-circle',
-        progress:0,
-        index:0,
-        WatchedVideoCount:0,
-        bookmark:false,
-        'video0':true,
-         'video1':false,
-         'video2':false,
-         'video3':false,
-         'video4':false,
-         
-         'video0Completed':false,
-         'video1Completed':false,
-         'video2Completed':false,
-         'video3Completed':false,
-         'video4Completed':false,
-         'video0Duration':'0',
-         'video1Duration':'0',
-         'video2Duration':'0',
-         'video3Duration':'0',
-         'video4Duration':'0',
+    video0Completed: false,
+    video1Completed: false,
+    video2Completed: false,
+    video3Completed: false,
+    video4Completed: false,
+    video0Duration: "0",
+    video1Duration: "0",
+    video2Duration: "0",
+    video3Duration: "0",
+    video4Duration: "0",
 
-     }
+    toast: "",
+    nftId: "",
+    sessionWallet: {},
+    accounts: "",
+    connected: "",
+  };
 
-    componentDidMount(){
-      
-      
-        AuthServices.FetchCourses(this.state.CoursType,this.state.CourseId)
-        .then(response => {
-            console.log("CoursePage Response",response);
-       
-            this.setState({CoursesInfo: response.data.course,
-                           CurrentVideo:response.data.course.videoContent[0],
-                           loading:false});
+  createNft = async (studentname, student_id) => {
+    const META_URL = "https://bothouniversity.com/";
+    const cid = META_URL + student_id;
+    alert("Confirmation Required");
+    // alert({
+    //   title: "Comfirm",
+    //   position: "top",
+    //   description: "Please Confirm The Transaction On Your Wallet",
+    //   status: "info",
+    //   duration: 2000,
+    //   isClosable: true,
+    // });
+    console.log("NFT CREATING");
+    const activeConf = sessionGetActiveConf();
+    const sw = new SessionWallet(conf[activeConf].network);
 
-            let count=0;
-
-        for(let j in response.data.course.videoContent){ 
-            for (let i in response.data.course.videoContent[j].usersWatched){
-                if(localStorage.getItem('userId')===response.data.course.videoContent[j].usersWatched[i]){
-                    this.setState({['video'+j+'Completed']:true});
-                    count+=1;
-                    break;
+    const result = await NFT.create(sw.wallet, activeConf, cid, studentname);
+    const addresses = this.state.sessionWallet.getDefaultAccount();
+    this.setState({ nftId: result });
+    const properties = {
+      student_id,
+      student_name: studentname,
+      course: this.state.CoursesInfo.title,
+      grade: "A",
+    };
+    await instance
+      .post("/addgraduatesDataRoute/addGraduateData", {
+        properties,
+      })
+      .then((res) => {
+        const id = result;
+        if (res && id) {
+          console.log(id);
+          console.log(addresses);
+          instance
+            .put(`/updateStudentMetadata/studentData/${student_id}`, {
+              app_id: id,
+              issuer_address: addresses,
+            })
+            .then((res) => {
+              alert("Student Created");
+              fundAccount(
+                this.state.sessionWallet.wallet,
+                activeConf,
+                algosdk.generateAccount(),
+                parseInt(id)
+              );
+              console.log(res.data);
+            })
+            .catch((err) => {
+              if (axios.isAxiosError(err) && err.response) {
+                const errMessage = err.response.data;
+                alert("Failed");
+                // alert({
+                //   title: "Failed",
+                //   description: `${errMessage}`,
+                //   status: "error",
+                //   duration: 9000,
+                //   isClosable: true,
+                // });
+                console.log(err);
+                if (err.response) {
+                  console.log(err.response.status);
+                  console.log(err);
                 }
+              }
+            });
+        }
+      })
+      .catch((err) => {
+        if (axios.isAxiosError(err) && err.response) {
+          const errMessage = err.response.data;
+          alert("Falied 2");
+          // toast({
+          //   title: "Failed",
+          //   description: `${errMessage}`,
+          //   status: "error",
+          //   duration: 9000,
+          //   isClosable: true,
+          // });
+          console.log(err);
+          if (err.response) {
+            console.log(err.response.status);
+            console.log(err);
+          }
+        }
+      });
+  };
+
+  updateWallet(sw) {
+    this.setState({
+      sessionWallet: sw,
+      accounts: sw.accountList(),
+      connected: sw.connected(),
+    });
+  }
+  componentDidMount() {
+    AuthServices.FetchCourses(this.state.CourseType, this.state.CourseId)
+      .then((response) => {
+        console.log("CoursePage Response", response);
+        this.setState({
+          CoursesInfo: response.data.course,
+          CurrentVideo: response.data.course.videoContent[0],
+          loading: false,
+        });
+        const activeConf = sessionGetActiveConf();
+        const sw = new SessionWallet(conf[activeConf].network);
+        this.setState(
+          {
+            sessionWallet: sw,
+          },
+          () => {
+            console.log(this.sessionWallet);
+            this.setState({
+              accounts: this.state.sessionWallet.accountList(),
+              connected: this.state.sessionWallet.connected(),
+            });
+          }
+        );
+
+        let count = 0;
+        for (let j in response.data.course.videoContent) {
+          for (let i in response.data.course.videoContent[j].usersWatched) {
+            if (
+              localStorage.getItem("userId") ===
+              response.data.course.videoContent[j].usersWatched[i]
+            ) {
+              this.setState({ ["video" + j + "Completed"]: true });
+              count += 1;
+              break;
             }
+          }
         }
-        
-      let progress = (count/this.state.CoursesInfo.videoContent.length)*100;
-      this.setState({WatchedVideoCount:count,progress:progress})
-     
-        })
-        .catch(error => {
-            console.log(error.response);
-        })
-    }
-    
-    VideochangeHandler=(event,video,index,playing)=> {
-       let VideoNumber = 'video' + index;
-       this.setState({CurrentVideo:video})
-       this.setState({index:index})
-     
-      for(let i=0;i<5;i++){
-        if(i===index){
-            this.setState({[VideoNumber]:true})
-        }
-        else{
-            this.setState({['video'+i]:false})
-        }
+
+        let progress =
+          (count / this.state.CoursesInfo.videoContent.length) * 100;
+        this.setState({ WatchedVideoCount: count, progress: progress }, () => {
+          if (this.state.progress === 100) {
+            this.courseComplete();
+          }
+        });
+      })
+      .catch((error) => {
+        console.log(error);
+        console.log(error.response);
+      });
+  }
+
+  VideochangeHandler = (event, video, index, playing) => {
+    let VideoNumber = "video" + index;
+    this.setState({ CurrentVideo: video });
+    this.setState({ index: index });
+
+    for (let i = 0; i < 5; i++) {
+      if (i === index) {
+        this.setState({ [VideoNumber]: true });
+      } else {
+        this.setState({ ["video" + i]: false });
       }
-     
-
-       
-        if(playing){
-            this.setState({playing:true})
-        }
-        else{
-            this.setState({playing:false})
-        }
-   
     }
 
+    if (playing) {
+      this.setState({ playing: true });
+    } else {
+      this.setState({ playing: false });
+    }
+  };
 
-    videoCompleted=(index)=> {
-     
-       if(!this.state['video'+index+'Completed']) {
-       this.setState(prevState => 
-        ({WatchedVideoCount:prevState.WatchedVideoCount+1}));
+  videoCompleted = (index) => {
+    if (!this.state["video" + index + "Completed"]) {
+      this.setState((prevState) => ({
+        WatchedVideoCount: prevState.WatchedVideoCount + 1,
+      }));
 
+      const form = {};
+      form["courseId"] = this.state.CourseId;
+      form["userId"] = localStorage.getItem("userId");
+      form["videoId"] = this.state.CoursesInfo.videoContent[index]._id;
+      console.log(form["videoId"]);
+      axios
+        .post("/watchedByuser", form)
 
-        const form = {}; 
-        form['courseId']= this.state.CourseId;
-        form['userId']=localStorage.getItem('userId');
-        form['videoId']=this.state.CoursesInfo.videoContent[index]._id;
-        console.log(form['videoId'])
-           axios.post('/watchedByuser',form)
-           
-           .then(response => {
-            console.log("Video information sent Response",response);
+        .then((response) => {
+          console.log("Video information sent Response", response);
         })
-    
-        .catch(error => {
-            console.log(error.response);
-        })
-       }
 
-   
-       
-       let progress = (this.state.WatchedVideoCount/this.state.CoursesInfo.videoContent.length)*100;
-       this.setState({progress:progress})
-       this.setState({['video'+index+'Completed']:true});
-      
+        .catch((error) => {
+          console.log(error.response);
+        });
     }
 
-    videoDuration =(duration,index)=>{
-        this.setState({['video'+index+'Duration']:duration})
-    }  
+    let progress =
+      (this.state.WatchedVideoCount /
+        this.state.CoursesInfo.videoContent.length) *
+      100;
+    this.setState({ progress: progress }, () => {
+      if (this.state.progress === 100) {
+        this.courseComplete();
+      }
+    });
+    this.setState({ ["video" + index + "Completed"]: true });
+  };
 
-    render(){
-        if(this.state.redirect)
-        return <Redirect to={this.state.redirect}/>;
+  courseComplete = async () => {
+    const user = localStorage.getItem("userId");
+    const userName = localStorage.getItem("userName");
+    const data = await this.isCourseCompleted();
+    if (data) {
+      this.setState({ nftId: data });
+      return;
+    }
+    if (this.state.connected && this.state.progress === 100) {
+      try {
+        const result = await this.createNft(userName, user);
+        this.setState({
+          nft: result,
+        });
+        AuthServices.CompleteCourse({
+          _userID: user,
+          courseId: this.state.CourseId,
+          certificateID: result,
+        })
+          .then(() => {})
+          .catch((e) => {
+            console.log(e);
+          });
+      } catch (e) {
+        console.log(e);
+        alert("Error while creating NFT");
+      }
+    } else {
+      if (this.state.progess === 100) {
+        alert("Wallet not connected");
+      }
+    }
+  };
 
-        let title = null;
-        let short_description=null;
-        let teacher=null;
-        let createdAt=null;
-        let VideoUrl=null;
-        let rating='0';
-        let bookmark=false;
-        let ratingtimesUpdated=null;
-        let requirement=null;
-        let longDescription=null;
-        let willLearn=null;
-        let videourl=null;
-        let CurrentVideo="";
-        let playButton='';
-        let playingVideo=false;
-        let completed=false;
-        let progressbar=null;
+  isCourseCompleted = async () => {
+    const user = localStorage.getItem("userId");
+    try {
+      const data = await AuthServices.IsCourseCompleted(
+        user,
+        this.state.CourseId
+      );
+      return data.certificate_id;
+    } catch (e) {
+      return false;
+    }
+  };
 
-        if(this.state.loading ===false){
+  videoDuration = (duration, index) => {
+    this.setState({ ["video" + index + "Duration"]: duration });
+  };
 
-                title = (this.state.CoursesInfo.title);
-                short_description = (this.state.CoursesInfo.discription);
-                teacher=(this.state.CoursesInfo.name)
-                createdAt=(this.state.CoursesInfo.createdAt);
-                createdAt =createdAt.split("T")[0];
-                //videoUrl=(this.state.CoursesInfo.videourl);
-                rating=(this.state.CoursesInfo.rating.ratingFinal);
-                requirement=parse(this.state.CoursesInfo.requirement);
-                longDescription=parse(this.state.CoursesInfo.discriptionLong);
-                willLearn=parse(this.state.CoursesInfo.willLearn);
-                ratingtimesUpdated=(this.state.CoursesInfo.rating.timesUpdated);
-                videourl=(this.state.CoursesInfo.videoContent.slice(0));
-                CurrentVideo =this.state.CurrentVideo;
-                
-                bookmark = (this.state.CoursesInfo.bookmark.includes(localStorage.getItem('userId'))) 
-                
-                if(rating ===0) rating=1;
-                
-                VideoUrl= (
-                    videourl.map((video,index)=>{
-                    let VideoNumber ='video'+index;
-                    if(this.state[VideoNumber]){
-                        playButton='VideoSelected';
-                        playingVideo=true;
-                    }
-                    else{
-                        playButton='VideoNotSelected';
-                        playingVideo=false;
-                    }
+  render() {
+    if (this.state.redirect) return <Redirect to={this.state.redirect} />;
 
-                    if(this.state['video'+index+'Completed']){
-                        completed='VideoCompleted';
-                    }
+    let title = null;
+    let short_description = null;
+    let teacher = null;
+    let createdAt = null;
+    let VideoUrl = null;
+    let rating = "0";
+    let bookmark = false;
+    let ratingtimesUpdated = null;
+    let requirement = null;
+    let longDescription = null;
+    let willLearn = null;
+    let videourl = null;
+    let CurrentVideo = "";
+    let playButton = "";
+    let playingVideo = false;
+    let completed = false;
+    let progressbar = null;
 
-                    else if(!this.state['video'+index+'Completed']){
-                        completed=false;
-                    }
-                
-               return(
+    if (this.state.loading === false) {
+      title = this.state.CoursesInfo.title;
+      short_description = this.state.CoursesInfo.discription;
+      teacher = this.state.CoursesInfo.name;
+      createdAt = this.state.CoursesInfo.createdAt;
+      createdAt = createdAt.split("T")[0];
+      //videoUrl=(this.state.CoursesInfo.videourl);
+      rating = this.state.CoursesInfo.rating.ratingFinal;
+      requirement = parse(this.state.CoursesInfo.requirement);
+      longDescription = parse(this.state.CoursesInfo.discriptionLong);
+      willLearn = parse(this.state.CoursesInfo.willLearn);
+      ratingtimesUpdated = this.state.CoursesInfo.rating.timesUpdated;
+      videourl = this.state.CoursesInfo.videoContent.slice(0);
+      CurrentVideo = this.state.CurrentVideo;
 
-                    <VideoList
-                        key={index}
-                        video={video}
-                        
-                        changed={(event)=> this.VideochangeHandler(event,video,index,playingVideo)}
-                        playButton={playButton}
-                        completed={completed}
-                        
-                        title={'Video '+ index}
-                        Duration={this.state['video'+index+'Duration']}
-                    />)
-            
-                
-                     } )
-                );
+      bookmark = this.state.CoursesInfo.bookmark.includes(
+        localStorage.getItem("userId")
+      );
 
+      if (rating === 0) rating = 1;
 
+      VideoUrl = videourl.map((video, index) => {
+        let VideoNumber = "video" + index;
+        if (this.state[VideoNumber]) {
+          playButton = "VideoSelected";
+          playingVideo = true;
+        } else {
+          playButton = "VideoNotSelected";
+          playingVideo = false;
         }
-        
-        if(this.state.progress===100){
-        progressbar = <p>Congratulations {localStorage.getItem('userName')}!  
-          <i className="fa fa-birthday-cake" style={{marginLeft:'5px'}} aria-hidden="true"></i></p>
+
+        if (this.state["video" + index + "Completed"]) {
+          completed = "VideoCompleted";
+        } else if (!this.state["video" + index + "Completed"]) {
+          completed = false;
         }
 
-        else{
-            progressbar=(<>
-             <p>You have Completed <b>{this.state.progress.toPrecision(2)}% </b> of your course!</p>
-                            <ProgressBar variant="success" now={this.state.progress} />
-            </>);
-        }
+        return (
+          <VideoList
+            key={index}
+            video={video}
+            changed={(event) =>
+              this.VideochangeHandler(event, video, index, playingVideo)
+            }
+            playButton={playButton}
+            completed={completed}
+            title={"Video " + index}
+            Duration={this.state["video" + index + "Duration"]}
+          />
+        );
+      });
+    }
 
-        return(
+    if (this.state.progress === 100) {
+      progressbar = (
+        <>
+          <p>
+            Congratulations {localStorage.getItem("userName")}!
+            <i
+              className="fa fa-birthday-cake"
+              style={{ marginLeft: "5px" }}
+              aria-hidden="true"
+            ></i>
+          </p>
+          <div style={{ textAlign: "center", width: "100%" }}>
+            <Signin
+              darkMode={false}
+              sessionWallet={this.state.sessionWallet}
+              accts={this.state.accounts}
+              connected={this.state.connected}
+              updateWallet={(data) => {
+                this.updateWallet(data);
+              }}
+            />
+          </div>
+          {this.state.connected ? (
+            <>{this.state.nft ? <p>Certficate {this.state.nft} </p> : <> </>}</>
+          ) : (
+            <>
+              <b>To get the certificate</b>
+            </>
+          )}
+        </>
+      );
+    } else {
+      progressbar = (
+        <>
+          <p>
+            You have Completed <b>{this.state.progress.toPrecision(2)}% </b> of
+            your course!
+          </p>
+          <ProgressBar variant="success" now={this.state.progress} />
+        </>
+      );
+    }
 
-          
-          <Layout >
-            <div className="coursePage">
-            
-            <div className="container">
-                                
-                <nav aria-label="breadcrumb">
+    return (
+      <Layout>
+        <div className="coursePage">
+          <div className="container">
+            <nav aria-label="breadcrumb">
+              <ol className="breadcrumb">
+                <li className="breadcrumb-item">
+                  <NavLink to="/home">Home</NavLink>
+                </li>
 
-                        <ol className="breadcrumb">
-                            <li className="breadcrumb-item">
-                                <NavLink to='/home'>
-                                    Home
-                                </NavLink></li>
+                <li className="breadcrumb-item">
+                  <NavLink to={`/Home/${this.state.CourseType}`}>
+                    {this.state.CourseType}
+                  </NavLink>
+                </li>
 
-                            <li className="breadcrumb-item">
-                                <NavLink to={`/Home/${this.state.CourseType}`}
+                <li className="breadcrumb-item">
+                  <NavLink
+                    to={`/course/${this.state.CourseType}/${this.state.CourseId}`}
+                    activeStyle={{ textDecoration: "underline" }}
+                  >
+                    {title}
+                  </NavLink>
+                </li>
+              </ol>
+            </nav>
 
-                                >
-                                    {this.state.CourseType}
-                                </NavLink>
-                            </li>
+            <div className="Main-Section">
+              <div className="Description-main">
+                <CourseDesc
+                  title={title}
+                  short_description={short_description}
+                  teacher={teacher}
+                  createdat={createdAt}
+                  CourseId={this.state.CourseId}
+                  rating={parseInt(rating)}
+                  ratingtimesUpdated={ratingtimesUpdated}
+                  CourseType={this.state.CourseType}
+                  bookmark={bookmark}
+                />
+              </div>
 
-
-                            <li className="breadcrumb-item">
-                                <NavLink to={`/course/${this.state.CourseType}/${this.state.CourseId}`}
-
-                                activeStyle={{textDecoration:'underline'}}>
-                                    {title}
-                                </NavLink>
-                            </li>
-
-                        </ol>
-                
-                </nav>
-
-                    <div className="Main-Section">
-                    
-                        <div className="Description-main">
-                            
-                            <CourseDesc title={title}
-                                        short_description={short_description}
-                                        teacher={teacher}
-                                        createdat={createdAt}
-                                        CourseId={this.state.CourseId}
-                                        rating={parseInt(rating)}
-                                        ratingtimesUpdated={ratingtimesUpdated}
-                                        CourseType={this.state.CourseType}
-                                        bookmark={bookmark}
-                         
-                            />
-
-                        </div>
-
-                            <div className="Course-Video">
-               
-
-                                <CourseVideo playing={this.state.playing} 
-                                    videoUrl={CurrentVideo}
-                                    index={this.state.index}
-                                    videoCompleted={this.videoCompleted}
-                                    videoDuration={this.videoDuration}
-                                    
-                                              />
-                            </div>
-
-
-                     </div>
-
+              <div className="Course-Video">
+                <CourseVideo
+                  playing={this.state.playing}
+                  videoUrl={CurrentVideo}
+                  index={this.state.index}
+                  videoCompleted={this.videoCompleted}
+                  videoDuration={this.videoDuration}
+                />
+              </div>
+            </div>
 
             <div className="Breakpoint"></div>
 
-           <div className="Section2">
-                
-                <div className="section2part1">
-                
-                        <div className="Small-nav-section">
-
-                            <p >About</p>
-                            {/* <p>Instructor</p>
+            <div className="Section2">
+              <div className="section2part1">
+                <div className="Small-nav-section">
+                  <p>About</p>
+                  {/* <p>Instructor</p>
                             <p>About</p> */}
+                </div>
 
+                <div className="flex-col-requirement">
+                  <h1>Requirement of this Course</h1>
+                  <p>{requirement}</p>
+                </div>
 
-                        </div>
+                <div className="flex-col-requirement">
+                  <h1>Descripton</h1>
+                  <p>{longDescription}</p>
+                </div>
 
+                <div className="flex-col-requirement">
+                  <h1>What will you learn from this course?</h1>
+                  <p>{willLearn}</p>
+                </div>
+              </div>
 
-                            
-                        <div className="flex-col-requirement">
-                            
-                            <h1>Requirement of this Course</h1>
-                            <p>{requirement}</p>
-                    
-                        </div>
+              <div style={{ marginBottom: "100px" }} className="flex-center">
+                {VideoUrl}
+                <div className="progressBar">{progressbar}</div>
 
-                            
-                        <div className="flex-col-requirement">
-                            
-                            <h1>Descripton</h1>
-                            <p>{ longDescription}</p>
-                    
-                        </div>
-
-                        <div className="flex-col-requirement">
-                            
-                            <h1>What will you learn from this course?</h1>
-                            <p>{willLearn}</p>
-                    
-                        </div>
-
-
-                 </div>
-
-                    <div style={{marginBottom:"100px"}} className="flex-center">
-        
-                        {VideoUrl}
-                        <div className='progressBar'>
-                            
-                           {progressbar}
-
-                        </div>
-
-                        <div className="progressBar">
-                            <p className="Rating_coursePage">Rate the course here please</p>
-                            <Rating style={{justifyContent:'center'}}
-                                rating={parseInt(rating)}
-                                edit={true}
-                                specialrating={true} 
-                                CourseId={this.state.CourseId}/>
-                        </div>
-                     </div>
-
-                    
-
+                <div className="progressBar">
+                  <p className="Rating_coursePage">
+                    Rate the course here please
+                  </p>
+                  <Rating
+                    style={{ justifyContent: "center" }}
+                    rating={parseInt(rating)}
+                    edit={true}
+                    specialrating={true}
+                    CourseId={this.state.CourseId}
+                  />
+                </div>
+              </div>
             </div>
-
-       
-            
-
-
+          </div>
         </div>
-        </div>
-        </Layout>
-
-        );
-    }
-
+      </Layout>
+    );
+  }
 }
 
 export default CoursePage;

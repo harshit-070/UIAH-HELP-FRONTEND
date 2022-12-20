@@ -1,199 +1,226 @@
-import axios from './axiosUrl';
+import axios from "./axiosUrl";
 
 class AuthServices {
+  // --------------------- Authentication routes --------------------------
 
+  // fetching
+  // RefreshToken(data){
+  //     return axios.post('/auth/token',data);
+  // }
 
-    // --------------------- Authentication routes --------------------------
+  register(data) {
+    return axios.post("/signup", data);
+  }
 
-    // fetching 
-    // RefreshToken(data){
-    //     return axios.post('/auth/token',data);
-    // }
+  otp(data) {
+    return axios.post("/signup/otp", data);
+  }
 
-    register(data) { 
-        return axios.post('/signup',data)
-     }
+  otpResend(data) {
+    return axios.post("/signup/otp-resend", data);
+  }
 
-    otp(data){  
-        return axios.post("/signup/otp",data)
-      }
+  login(data) {
+    return axios.post("/login", data);
+  }
 
+  VerifyEmail(data) {
+    return axios.post("/signup/resetOtp", data);
+  }
 
-    otpResend(data){ 
-        return axios.post('/signup/otp-resend',data)
-    }
+  VerifyOtp(data) {
+    return axios.post("/signup/checkOtp", data);
+  }
 
+  ResetPassword(data) {
+    return axios.post("/signup/reset-password", data);
+  }
 
-    login(data) { 
-        return axios.post('/login',data)
-    }
+  logout() {
+    localStorage.clear();
+  }
 
-    VerifyEmail(data){ 
-        return axios.post('/signup/resetOtp',data);
-    }
+  getCurrentUser() {
+    return localStorage.getItem("user");
+  }
 
-    VerifyOtp(data){ 
-        return axios.post('/signup/checkOtp',data);
-    }
+  getUserName() {
+    let userName = localStorage.getItem("userName");
+    if (userName != null)
+      userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+    return userName;
+  }
 
-    ResetPassword(data){  
-        return axios.post('/signup/reset-password',data);
-    }
+  // google auth
 
-    logout(){
-       localStorage.clear();
-    }
+  Google_login(data) {
+    return axios.post("/google_login", data);
+  }
 
+  Google_Signup(data) {
+    return axios.post("/google_signup", data);
+  }
 
-    getCurrentUser(){
-        return localStorage.getItem('user');
-    }
+  //   ----------------------- end of auth routes --------------------
 
-    getUserName(){
-       let userName=localStorage.getItem('userName');
-       if(userName!=null)
-        userName= userName.charAt(0).toUpperCase() + userName.slice(1);
-        return userName;
-    }
+  // payment stripe
 
-    // google auth
+  StripePayment(data) {
+    return axios.post("/stripe/payment", data, {
+      headers: {
+        Authorization:
+          "Bearer " +
+          localStorage.getItem("user") +
+          " " +
+          localStorage.getItem("ref_token"),
+      },
+    });
+  }
 
-    Google_login(data) { 
-        return axios.post('/google_login',data)
-    }
-    
-    Google_Signup(data) { 
-        return axios.post('/google_signup',data)
-    }
-    
+  StripePayment_course(CourseLink) {
+    return axios.get(`/stripe/${CourseLink}`, {
+      headers: {
+        Authorization:
+          "Bearer " +
+          localStorage.getItem("user") +
+          " " +
+          localStorage.getItem("ref_token"),
+      },
+    });
+  }
 
-    //   ----------------------- end of auth routes --------------------
+  // General Coursera routes
 
-    // payment stripe
+  // storing courses in a redux store
 
-    StripePayment(data) {
-        return axios.post('/stripe/payment',data,{
-            headers: {
-                Authorization: 'Bearer '+ localStorage.getItem('user') + " " + localStorage.getItem('ref_token')
-            }})
-    }
-    
-    StripePayment_course(CourseLink){
-        return axios.get(`/stripe/${CourseLink}`,{
-            headers: {
-                Authorization: 'Bearer '+ localStorage.getItem('user') + " " + localStorage.getItem('ref_token')
-            }})
-    }
+  AllCourses() {
+    return axios.get("/home/allCourses");
+  }
 
-    // General Coursera routes
+  HomepageCourse(CourseLink) {
+    return axios.get(`/home/${CourseLink}`);
+  }
 
-    // storing courses in a redux store
+  PreferenceCourse(CourseLink, data) {
+    return axios.post(`/home/${CourseLink}`, data, {
+      headers: {
+        Authorization:
+          "Bearer " +
+          localStorage.getItem("user") +
+          " " +
+          localStorage.getItem("ref_token"),
+      },
+    });
+  }
 
-    AllCourses(){
-        return axios.get('/home/allCourses')
-    }
+  UpdatedCourse(data) {
+    return axios.put("course/Update", data);
+  }
 
-    HomepageCourse(CourseLink){
-        return axios.get(`/home/${CourseLink}`)
-    }
+  //Bookmark
+  bookmarkCourses(userName, userId) {
+    return axios.get(`/users/${userName}/${userId}`, {
+      headers: {
+        Authorization:
+          "Bearer " +
+          localStorage.getItem("user") +
+          " " +
+          localStorage.getItem("ref_token"),
+      },
+    });
+  }
 
-    PreferenceCourse(CourseLink,data){
-        return axios.post(`/home/${CourseLink}`,data,{
-            headers: {
-               
-                Authorization: 'Bearer '+ localStorage.getItem('user') + " " + localStorage.getItem('ref_token')
-            }
-        })
-    }
+  DeleteBookmark(data) {
+    return axios.post("/unbookmark", data, {
+      headers: {
+        Authorization:
+          "Bearer " +
+          localStorage.getItem("user") +
+          " " +
+          localStorage.getItem("ref_token"),
+      },
+    });
+  }
 
+  BookMark(CourseId, CourseName, data) {
+    return axios.post(`/home/${CourseId}/${CourseName}`, data, {
+      headers: {
+        Authorization:
+          "Bearer " +
+          localStorage.getItem("user") +
+          " " +
+          localStorage.getItem("ref_token"),
+      },
+    });
+  }
 
-    UpdatedCourse(data){
-        return axios.put('course/Update',data);
-    }
+  CompleteCourse(data) {
+    return axios.post("/course/completed", data, {
+      headers: {
+        Authorization:
+          "Bearer " +
+          localStorage.getItem("user") +
+          " " +
+          localStorage.getItem("ref_token"),
+      },
+    });
+  }
 
-    
-    //Bookmark
-    bookmarkCourses(userName,userId){
-        return axios.get(`/users/${userName}/${userId}`,{
-            headers: {
-                
-                Authorization: 'Bearer '+ localStorage.getItem('user') + " " + localStorage.getItem('ref_token')
-            }
-        });
-    }
+  IsCourseCompleted(userId, courseId) {
+    return axios.get(`/course/${userId}/${courseId}`, {
+      headers: {
+        Authorization:
+          "Bearer " +
+          localStorage.getItem("user") +
+          " " +
+          localStorage.getItem("ref_token"),
+      },
+    });
+  }
 
-    DeleteBookmark(data){
-        return axios.post("/unbookmark",data,{
-            headers: {
-                
-                Authorization: 'Bearer '+ localStorage.getItem('user') + " " + localStorage.getItem('ref_token')
-            }
-        });
-    }
+  Download(CourseId) {
+    return axios.get(`/pdf/download/${CourseId}`);
+  }
 
+  FetchCourses(CourseName, CourseId) {
+    return axios.get(`/course/${CourseName}/${CourseId}`, {
+      headers: {
+        Authorization:
+          "Bearer " +
+          localStorage.getItem("user") +
+          " " +
+          localStorage.getItem("ref_token"),
+      },
+    });
+  }
 
-    BookMark(CourseId,CourseName,data){
-        return axios.post(`/home/${CourseId}/${CourseName}`,data,{
-            headers: {
-               
-                Authorization: 'Bearer '+ localStorage.getItem('user') + " " + localStorage.getItem('ref_token')
-            }
-        })
-    
-    }
+  Rating(data) {
+    return axios.put("/Rating", data, {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("user"),
+      },
+    });
+  }
 
+  TeacherHomePage(data) {
+    return axios.post("/creater/homepage", data, {
+      headers: {
+        Authorization:
+          "Bearer " +
+          localStorage.getItem("user") +
+          " " +
+          localStorage.getItem("ref_token"),
+      },
+    });
+  }
 
-    Download(CourseId){
-        return axios.get(`/pdf/download/${CourseId}`)
-    }
-
-
-
-    FetchCourses(CourseName,CourseId){
-        return axios.get(`/course/${CourseName}/${CourseId}`,{
-            headers: {
-                
-                Authorization: 'Bearer '+ localStorage.getItem('user') + " " + localStorage.getItem('ref_token')
-            }
-        } )
-    
-    }
-
-
-   
-
-
-    Rating(data){
-    return axios.put("/Rating",data,{
-        headers: {
-            
-            Authorization: 'Bearer '+ localStorage.getItem('user')
-        }
-    } )}
-
-   
-  
-
-    TeacherHomePage(data){
-        return axios.post("/creater/homepage",data,{
-            headers: {
-               
-                Authorization: 'Bearer '+ localStorage.getItem('user') + " " + localStorage.getItem('ref_token')
-            }
-        })
-    }
-
-
-    TeacherCourseDelete(data){
-        return axios.post("/course/delete",data,{
-            headers: {
-               
-                Authorization: 'Bearer '+ localStorage.getItem('user') 
-            }
-        })
-    }
-
-    
+  TeacherCourseDelete(data) {
+    return axios.post("/course/delete", data, {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("user"),
+      },
+    });
+  }
 }
 
 export default new AuthServices();
